@@ -1,0 +1,337 @@
+
+% This LaTeX was auto-generated from MATLAB code.
+% To make changes, update the MATLAB code and republish this document.
+
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{color}
+
+\sloppy
+\definecolor{lightgray}{gray}{0.5}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+    
+    
+\section*{Mircoarray Analysis - Machine Learning}
+
+\begin{par}
+Template by [Thinh Nguyen Fernando Ramirez] Code by [Thinh Nguyen Fernando Ramirez]
+\end{par} \vspace{1em}
+
+\subsection*{Contents}
+
+\begin{itemize}
+\setlength{\itemsep}{-1ex}
+   \item Background
+   \item Download and parse the dataset. You may use bmes\_downloadandparsegse('GSE7390')
+   \item you do not need to to tranlsate the Probe names to gene IDS; hence you
+   \item in the Header of the Series, you can find the patient characteristics.
+   \item Instead of using all of the genes, use only the 76-genes listed in Table 3
+   \item Randomly pick out of 90\% of the samples to serve as training data, and
+   \item Get SVM predctions using predict() on the test data. Calculate and
+   \item Train a SVM model using fitcsvm() on the training data. Note that SVM
+   \item Write an evaluation function numerror=hwmaml\_breastcancer\_trainandtest(Xtrain,Ttrain,Xtest,Ttest)
+   \item Perform forward selection of features (genes) that give the best prediction
+   \item Using the list of genes selected, report the 10-fold cross-validation
+\end{itemize}
+
+
+\subsection*{Background}
+
+\begin{par}
+In this study you will analyze a Breast Cancer dataset, GSE7390, and identify a gene signature for prediction of Breast Cancer replase. Use SVM (support-vecot machine) to predict relapse. Use a forward-selection strategy and 10-fold crossvalidation to determine the best gene signature
+\end{par} \vspace{1em}
+
+
+\subsection*{Download and parse the dataset. You may use bmes\_downloadandparsegse('GSE7390')}
+
+\begin{verbatim}
+%(which downloads the series file and parses it using geoseriesread()).
+
+gse = bmes_downloadandparsegse('GSE7390')
+data = gse.Data';
+genenames = data.colnames;
+%genes in columns, samples in rows
+%gene ids have the 1007_s_at
+%compare and have the 76-genes, update to variable X, no need to keep the
+%remaining genes
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}Downloading https://ftp.ncbi.nlm.nih.gov/geo/series/GSE7nnn/GSE7390/matrix/GSE7390_series_matrix.txt.gz ...
+Reading C:\Users\Fernando A. Ramirez\AppData\Local\Temp\GSE7390.txt ...
+
+gse = 
+
+  struct with fields:
+
+    Header: [1×1 struct]
+      Data: [22283×198 bioma.data.DataMatrix]
+
+\end{verbatim} \color{black}
+    
+
+\subsection*{you do not need to to tranlsate the Probe names to gene IDS; hence you}
+
+\begin{par}
+do not need to download the GPL platform file for this dataset.
+\end{par} \vspace{1em}
+\begin{verbatim}
+%Finding the e.rfs with 1 indicating the releaps and 0 indicative of no
+%relapse
+\end{verbatim}
+
+
+\subsection*{in the Header of the Series, you can find the patient characteristics.}
+
+\begin{par}
+Cancer relapse status is given as "e.rfs" with 1 indicating relapse, and 0 indicating no relapse.
+\end{par} \vspace{1em}
+\begin{verbatim}
+%where gene located in the datamatrix
+%if possible use Map to the genes
+
+e_rfs = strcmp(gse.Header.Samples.characteristics_ch1(:,1),'e.rfs: 0') |...
+    strcmp(gse.Header.Samples.characteristics_ch1(:,1),'e.rfs: 1');
+\end{verbatim}
+
+
+\subsection*{Instead of using all of the genes, use only the 76-genes listed in Table 3}
+
+\begin{par}
+of the `Gene-expression profile to predict distant mestatsis of lymph-node- negative primary breast cancer`. Filter out the genes that are not part of the 76-genes, you won't need them for the rest of the assigment
+\end{par} \vspace{1em}
+\begin{verbatim}
+pract_data = importdata('table_three_genes.txt');
+%genenames = pract_data.colnames;
+%genes( strcomp(genes, '')) = []
+%strsplit(fileread('breastcancer76genesignature.txt'))
+\end{verbatim}
+\begin{verbatim}
+load_sevensix = fileread('76_genes.txt');
+%entries  = strsplit(load_sevensix, newline);
+sevensix_hold = regexp([newline load_sevensix], '\n([\d_a-zA-Z]+) ','tokens');
+sevensix = [sevensix_hold{:}]'
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}
+sevensix =
+
+  76×1 cell array
+
+    {'219340_s_at'}
+    {'217771_at'  }
+    {'202418_at'  }
+    {'206295_at'  }
+    {'201091_s_at'}
+    {'204015_s_at'}
+    {'200726_at'  }
+    {'200965_s_at'}
+    {'210314_x_at'}
+    {'221882_s_at'}
+    {'217767_at'  }
+    {'219588_s_at'}
+    {'204073_s_at'}
+    {'212567_s_at'}
+    {'211382_s_at'}
+    {'201663_s_at'}
+    {'221344_at'  }
+    {'210028_s_at'}
+    {'218782_s_at'}
+    {'201664_at'  }
+    {'219724_s_at'}
+    {'204014_at'  }
+    {'212014_x_at'}
+    {'202240_at'  }
+    {'204740_at'  }
+    {'208180_s_at'}
+    {'204768_s_at'}
+    {'203391_at'  }
+    {'211762_s_at'}
+    {'218914_at'  }
+    {'221028_s_at'}
+    {'211779_x_at'}
+    {'218883_s_at'}
+    {'204888_s_at'}
+    {'217815_at'  }
+    {'201368_at'  }
+    {'201288_at'  }
+    {'201068_s_at'}
+    {'218478_s_at'}
+    {'214919_s_at'}
+    {'209835_x_at'}
+    {'217471_at'  }
+    {'203306_s_at'}
+    {'205034_at'  }
+    {'221816_s_at'}
+    {'219510_at'  }
+    {'217102_at'  }
+    {'208683_at'  }
+    {'215510_at'  }
+    {'218533_s_at'}
+    {'215633_x_at'}
+    {'221928_at'  }
+    {'214806_at'  }
+    {'204540_at'  }
+    {'221916_at'  }
+    {'216693_x_at'}
+    {'209500_x_at'}
+    {'209524_at'  }
+    {'207118_s_at'}
+    {'211040_x_at'}
+    {'218430_s_at'}
+    {'217404_s_at'}
+    {'205848_at'  }
+    {'214915_at'  }
+    {'216010_x_at'}
+    {'204631_at'  }
+    {'202687_s_at'}
+    {'221634_at'  }
+    {'220886_at'  }
+    {'202239_at'  }
+    {'204218_at'  }
+    {'221241_s_at'}
+    {'209862_s_at'}
+    {'217019_at'  }
+    {'210593_at'  }
+    {'216103_at'  }
+
+\end{verbatim} \color{black}
+    \begin{verbatim}
+%logical vector to iterate over
+Isevensix= logical(zeros(size(genenames)));
+
+for i=1:length(sevensix)
+    Isevensix = Isevensix | strcmp(sevensix(i),genenames);
+end
+
+%sum(Isevensix(:) == 1) should produce samples that hold true, which are
+%found in the list of the sevensix genes and genenames.
+\end{verbatim}
+
+
+\subsection*{Randomly pick out of 90\% of the samples to serve as training data, and}
+
+\begin{par}
+the remaining 10 to serve as test data. report on the
+\end{par} \vspace{1em}
+\begin{verbatim}
+%extract the e_rfs for training dataset
+T = gse.Header.Samples.characteristics_ch1(e_rfs,:);
+rawdata = data(:,sevensix);
+
+x = double(rawdata);
+
+cv = cvpartition(T, 'k', 10);
+
+%using more robust method for the cvpartition
+
+Itrain = cv.training(1);
+Itest = cv.test(1);
+\end{verbatim}
+
+
+\subsection*{Get SVM predctions using predict() on the test data. Calculate and}
+
+\begin{par}
+report the accuracy rate (for a single partition/fold) -- after training models are set
+\end{par} \vspace{1em}
+\begin{verbatim}
+%setting-up training models
+Xtrain = x(Itrain,:);
+Xtest = x(Itest,:);
+Ttrain = T(:,Itrain)';
+Ttest = T(:,Itest)';
+\end{verbatim}
+
+
+\subsection*{Train a SVM model using fitcsvm() on the training data. Note that SVM}
+
+\begin{par}
+considers each row as a sample to be predicted and consideres each column as features (genes).
+\end{par} \vspace{1em}
+\begin{verbatim}
+mdl = fitcsvm(Xtrain,Ttrain,'KernelFunction','rbf');
+Ytest = mdl.predict(Xtest);
+%training modle by Gaussian or Radial Basis Function (RBF) kernel, default
+%for one-class learning.
+
+numcorrect = sum(strcmp(Ytest,Ttest));
+numerror = sum(~strcmp(Ytest, Ttest));
+
+accuracy = numerror / numel(Ttest);
+fprintf('Accuracy of model is %.2f%%\n',(accuracy*100))
+
+%errorate and the accuracy should equal 1.
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}Accuracy of model is 47.37%
+\end{verbatim} \color{black}
+    
+
+\subsection*{Write an evaluation function numerror=hwmaml\_breastcancer\_trainandtest(Xtrain,Ttrain,Xtest,Ttest)}
+
+\begin{par}
+that trains an SVM using Xtrain \& Ttrain, where Xtrain contains gene expression data for a subset of samples, and Ttrain is binary vector of class labels (indicating cancer relaspse status) and calculates the number of errors on the test data Xtest \& Ttest.
+\end{par} \vspace{1em}
+\begin{verbatim}
+% Back in hwmaml_breastcancer.m, calculate and report the accuracy
+% (for a single partition/fold), this time by calling the
+% hwmaml_breastcancer_trainandtest() function you wrote.
+
+
+[numerrortrain accuracytrain] = hwmaml_breastcancer_trainandtest(Xtrain,Ttrain,Xtest,Ttest);
+
+fprintf('Trained numerror of model is %.1f\n',(numerrortrain));
+fprintf('Trained Accuracy of model is %.2f%%\n',(accuracytrain))
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}Trained numerror of model is 9.0
+Trained Accuracy of model is 0.53%
+\end{verbatim} \color{black}
+    
+
+\subsection*{Perform forward selection of features (genes) that give the best prediction}
+
+\begin{par}
+results (as measured by accuracy). Use sequentialfs() \ensuremath{>} Create a 10-fold cross-validation of all data samples using cvpartition(). You will pass this to sequentialfs(). Report the names of the genes that were selected by sequentialfs to have the best accuracy.
+\end{par} \vspace{1em}
+\begin{verbatim}
+Iselection = sequentialfs(@hwmaml_breastcancer_trainandtest,x,T','cv',cv,'options',statset('display','iter'),'direction','forward');
+fprintf('Names of the genes selected by sequentialfs with best accuracy are: %s \n',strjoin(rawdata.colnames(Iselection),' , '))
+errors = crossval(@hwmaml_breastcancer_trainandtest, x(:,Iselection),T','partition',cv);
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}Start forward sequential feature selection:
+Initial columns included:  none
+Columns that can not be included:  none
+Step 1, added column 15, criterion value 0.353535
+Step 2, added column 61, criterion value 0.318182
+Step 3, added column 38, criterion value 0.30303
+Step 4, added column 35, criterion value 0.29798
+Step 5, added column 43, criterion value 0.292929
+Step 6, added column 45, criterion value 0.282828
+Step 7, added column 31, criterion value 0.257576
+Final columns included:  15 31 35 38 43 45 61 
+Names of the genes selected by sequentialfs with best accuracy are: 211382_s_at , 221028_s_at , 217815_at , 201068_s_at , 203306_s_at , 221816_s_at , 218430_s_at 
+\end{verbatim} \color{black}
+    
+
+\subsection*{Using the list of genes selected, report the 10-fold cross-validation}
+
+\begin{par}
+accurary of the SVM model. results are the same as the sequentialfs..
+\end{par} \vspace{1em}
+\begin{verbatim}
+tenfold_cross_val_acc = 1 - sum(errors)/numel(T);
+fprintf('The Accuracy after cross validation is %.2f%%\n',(tenfold_cross_val_acc)*100)
+\end{verbatim}
+
+        \color{lightgray} \begin{verbatim}The Accuracy after cross validation is 74.24%
+\end{verbatim} \color{black}
+    
+
+
+\end{document}
+
